@@ -1,0 +1,85 @@
+#Install programm
+dnf install  easy-rsa vsftpd ftp openvpn -y
+nano /etc/selinux/config  # SELINUX=disabled
+setenforce 0
+#Create KEYS
+cd /usr/share/easy-rsa/
+cp -rf 3 C1
+cp -rf 3 C2
+cp -rf 3 C3
+nano ./vars # set_var EASYRSA_DN "cn_only" 
+./easyrsa init-pki
+touch pki/.rnd
+./easyrsa build-ca
+./easyrsa gen-dh
+./easyrsa gen-req vpn-server nopass
+./easyrsa sign-req server vpn-server
+openvpn --genkey --secret pki/ta.key
+mkdir -p /home/user/keys
+mkdir -p /home/user/keys/cord-1/server
+mkdir -p /home/user/keys/cord-1/client1
+mkdir -p /home/user/keys/cord-1/client2
+mkdir -p /home/user/keys/cord-1/client3
+mkdir -p /home/user/keys/cord-2/server
+mkdir -p /home/user/keys/cord-2/client1
+mkdir -p /home/user/keys/cord-2/client2
+mkdir -p /home/user/keys/cord-2/client3
+mkdir -p /home/user/keys/cord-3/server
+mkdir -p /home/user/keys/cord-3/client1
+mkdir -p /home/user/keys/cord-3/client2
+mkdir -p /home/user/keys/cord-3/client3
+cd /usr/share/easy-rsa/C1/pki/
+cp ca.crt issued/vpn-server.crt private/vpn-server.key dh.pem ta.key  /home/user/keys/cord-one/server
+cd  /home/user/keys/cord-one/server
+tar -cf cord-1-server.tar.gz *
+# if need right now send archive with help csp " scp cord-1-server.tar.gz  root@ip_addres_server:/ "
+cd /usr/share/easy-rsa/C2/pki/
+cp ca.crt issued/vpn-server.crt private/vpn-server.key dh.pem ta.key  /home/user/keys/cord-two/server
+cd /home/user/keys/cord-two/server
+tar -cf cord-2-server.tar.gz *
+# if need right now send archive with help csp " scp cord-2-server.tar.gz  root@ip_addres_server:/ "
+cd /usr/share/easy-rsa/C3/pki/
+cp ca.crt issued/vpn-server.crt private/vpn-server.key dh.pem ta.key  /home/user/keys/cord-three/server
+cd /home/user/keys/cord-three/server
+tar -cf cord-3-server.tar.gz *
+# if need right now send archive with help csp " scp cord-2-server.tar.gz  root@ip_addres_server:/ "
+#CREATE USER KEYS
+cd /usr/share/easy-rsa/C1
+./easyrsa gen-req cord-1-client-1 nopass
+./easyrsa sign-req client cord-1-client-1
+./easyrsa gen-req cord-1-client-2 nopass
+./easyrsa sign-req client cord-1-client-2
+./easyrsa gen-req cord-1-client-3 nopass
+./easyrsa sign-req client cord-1-client-3
+cp pki/issued/cord-1-client-1.crt pki/private/cord-1-client-1.key pki/dh.pem pki/ca.crt pki/ta.key /home/user/keys/cord-1/client1
+cp pki/issued/cord-1-client-2.crt pki/private/cord-1-client-2.key pki/dh.pem pki/ca.crt pki/ta.key /home/user/keys/cord-1/client2
+cp pki/issued/cord-1-client-3.crt pki/private/cord-1-client-3.key pki/dh.pem pki/ca.crt pki/ta.key /home/user/keys/cord-1/client3
+cd /usr/share/easy-rsa/C2
+./easyrsa gen-req cord-2-client-1 nopass
+./easyrsa sign-req client cord-2-client-1
+./easyrsa gen-req cord-2-client-2 nopass
+./easyrsa sign-req client cord-2-client-2
+./easyrsa gen-req cord-2-client-3 nopass
+./easyrsa sign-req client cord-2-client-3
+cp pki/issued/cord-2-client-1.crt pki/private/cord-2-client-1.key pki/dh.pem pki/ca.crt pki/ta.key /home/user/keys/cord-2/client1
+cp pki/issued/cord-2-client-2.crt pki/private/cord-2-client-2.key pki/dh.pem pki/ca.crt pki/ta.key /home/user/keys/cord-2/client2
+cp pki/issued/cord-2-client-3.crt pki/private/cord-2-client-3.key pki/dh.pem pki/ca.crt pki/ta.key /home/user/keys/cord-2/client3
+cd /usr/share/easy-rsa/C3
+./easyrsa gen-req cord-3-client-1 nopass
+./easyrsa sign-req client cord-3-client-1
+./easyrsa gen-req cord-3-client-2 nopass
+./easyrsa sign-req client cord-3-client-2
+./easyrsa gen-req cord-3-client-3 nopass
+./easyrsa sign-req client cord-3-client-3
+cp pki/issued/cord-3-client-1.crt pki/private/cord-3-client-1.key pki/dh.pem pki/ca.crt pki/ta.key /home/user/keys/cord-3/client1
+cp pki/issued/cord-3-client-2.crt pki/private/cord-3-client-2.key pki/dh.pem pki/ca.crt pki/ta.key /home/user/keys/cord-3/client2
+cp pki/issued/cord-3-client-3.crt pki/private/cord-3-client-3.key pki/dh.pem pki/ca.crt pki/ta.key /home/user/keys/cord-3/client3
+#SETTINGS FTP
+nano /etc/vsftpd/vsftpd.conf 
+local_enable=YES
+chroot_local_user=YES
+allow_writeable_chroot=YES
+pam_service_name=vsftpd
+systemctl start vsftpd
+systemctl enable vsftpd
+chmod 0777 -R /home/user
