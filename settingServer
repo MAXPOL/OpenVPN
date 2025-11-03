@@ -1,0 +1,49 @@
+dnf install openvpn curlftpfs autofs -y
+nano /etc/selinux/config  # Заменив текст SELINUX=enforcing на SELINUX=permissive
+setenforce 0
+mkdir /keys
+curlftpfs ftp://172.168.224.231 /keys -o user=user:1 # or get by scp
+mkdir /etc/openvpn/server/keys
+cp -rf /keys/keys/SERVER/* /etc/openvpn/server/keys
+
+nano /etc/openvpn/server/server.conf
+port 1193 # different ports on different servers
+proto udp
+dev tun1 # different number tun on different device
+ca ca.crt
+cert vpn-server.crt
+key vpn-server.key
+dh dh.pem
+tls-auth ta.key 0
+server 28.0.10.0 255.255.255.0 # different ip address on different device
+push "route 27.0.10.0 255.255.255.0"  # different route on different device
+push "dhcp-option DNS 77.88.8.8"
+ifconfig-pool-persist ipp.txt
+keepalive 10 120
+max-clients 15
+client-to-client
+persist-key
+persist-tun
+status /var/log/openvpn/openvpn-status.log
+log-append /var/log/openvpn/openvpn.log
+verb 0
+mute 20
+daemon
+mode server
+tls-server
+cipher AES-256-CBC
+client-to-client
+push "explicit-exit-notify 3"
+
+mkdir /var/log/openvpn
+systemctl enable openvpn-server@server
+systemctl start openvpn-server@server
+systemctl status openvpn-server@server
+
+
+nano /etc/sysctl.conf #    net.ipv4.ip_forward = 1
+sysctl -p
+iptables -A FORWARD -i tun0 -o tun1 -j ACCEPT
+iptables -A FORWARD -i tun1 -o tun0 -j ACCEPT
+iptables -t nat -A POSTROUTING -o tun1 -j MASQUERADE
+iptables -t nat -A POSTROUTING -o tun0 -j MASQUERADE
