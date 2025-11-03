@@ -1,0 +1,26 @@
+dnf install openvpn curlftpfs autofs -y
+mkdir /keys
+curlftpfs ftp://172.168.224.231 /keys -o user=user:1
+cp -rf /keys/keys/CLIENT1/* /etc/openvpn/client
+nano /etc/openvpn/client/config.ovpn
+client
+resolv-retry infinite
+nobind
+remote 172.168.224.230 1194
+proto udp
+dev tun
+#comp-lzo
+ca ca.crt
+cert client1.crt
+key client1.key
+#dh dh.pem
+tls-client
+tls-auth ta.key 1
+float
+keepalive 10 120
+persist-key
+persist-tun
+verb 0
+
+openvpn --config config.ovpn
+route add -net 10.0.10.0/24 gw 11.0.0.6
